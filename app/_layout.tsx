@@ -9,7 +9,7 @@ export default function RootLayout() {
       <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="navigation" options={{ headerShown: false }} />
-          <Stack.Screen name="form" options={{ headerShown: false }} />
+          <Stack.Screen name="addResidentForm" options={{ headerShown: false }} />
           <Stack.Screen name="list" options={{ headerShown: false }} />
       </Stack>
     </>

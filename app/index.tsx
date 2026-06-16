@@ -48,6 +48,7 @@ export default function Index() {
                 router.replace('/navigation')
             }
         }catch(error: any) {
+            console.log(error.message)
             Alert.alert('Invalid', error.message);
         }finally {
             setLoading(false)
@@ -64,11 +65,11 @@ export default function Index() {
             </View>
             <View style={{ flex: 1, backgroundColor: '#fff', gap: 45, borderTopRightRadius: 20, borderTopLeftRadius: 20, paddingHorizontal: 25, paddingTop: 50 }}>
                 <View>
-                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Email</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#F07E13' }}>Email</Text>
                     <TextInput autoCapitalize="none" onChangeText={(text) => setEmail(text)} style={style.textInput} />
                 </View>
                 <View>
-                    <Text style={{ fontSize: 16, fontWeight: '500' }}>Password</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#F07E13' }}>Password</Text>
                     <View style={[style.textInput, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                         <TextInput secureTextEntry={!passVissible} autoCapitalize="none" style={{ width: '80%' }} onChangeText={(text) => setPassword(text)} />
                         <Pressable onPress={() => setpassVissible(!passVissible)}>
@@ -93,7 +94,7 @@ export default function Index() {
 
 const style = StyleSheet.create({
     container: {
-        backgroundColor: '#306060',
+        backgroundColor: '#F07E13',
         height,
         width,
         paddingTop: 50
@@ -111,7 +112,7 @@ const style = StyleSheet.create({
         width: '100%',
     },
     btn: {
-        backgroundColor: '#306060',
+        backgroundColor: '#F07E13',
         paddingVertical: 15,
         alignSelf: 'center',
         width: '100%',

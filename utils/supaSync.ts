@@ -1,4 +1,4 @@
-import { Barangays, EducationProps, OptionProps, ResidentData } from '@/app/form';
+import { Barangays, EducationProps, OptionProps, ResidentData } from '@/app/addResidentForm';
 import { db, initDatabase } from '@/app/sql/optionsDB';
 import { observable } from '@legendapp/state';
 import { observablePersistAsyncStorage } from '@legendapp/state/persist-plugins/async-storage';

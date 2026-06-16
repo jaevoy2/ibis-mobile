@@ -14,14 +14,12 @@ interface TotalResidentsWidgetProps {
 const TotalResidentsWidget: React.FC<TotalResidentsWidgetProps> = ({
   total,
   title = 'Total Residents',
-  backgroundColor = '#306060',
+  backgroundColor = '#F07E13',
   accentColor = '#4DD0E1',
   textColor = '#fff',
 }) => {
   return (
     <View style={{ backgroundColor, borderRadius: 16, width: '100%', height: 120, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 6, overflow: 'hidden' }} >
-
-      {/* Text content */}
       <Text style={{ color: textColor, fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
         {title}
       </Text>
@@ -29,7 +27,7 @@ const TotalResidentsWidget: React.FC<TotalResidentsWidgetProps> = ({
         <Text style={{ color: textColor, fontSize: 32, fontWeight: 'bold' }}>
           {total}
         </Text>
-        <Pressable onPress={() => router.push('/list')} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#4e8080', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 5 }}>
+        <Pressable onPress={() => router.push('/list')} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#f1ab68', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 5 }}>
           <Ionicons name={'open-outline'} color={'#ffff'} size={20} />
           <Text style={{ color: '#fff' }}>View</Text>
         </Pressable>

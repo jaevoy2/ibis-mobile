@@ -113,7 +113,7 @@ export default function Dashboard() {
         <View style={{ height, backgroundColor: '#f5f5f5' }}>
             {loading == true ? (
                 <View style={{ height, paddingTop: 250, alignItems: 'center' }}>
-                    <ActivityIndicator size={'large'} color={'#306060'} />
+                    <ActivityIndicator size={'large'} color={'#F07E13'} />
                 </View>
             ) : (
                 <>

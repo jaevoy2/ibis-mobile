@@ -8,11 +8,10 @@ import { Dimensions, Pressable, StyleSheet, Text, TouchableOpacity, View } from 
 
 
 const { height, width } = Dimensions.get('window');
-const views = ['dashboard', 'settings'];
 
 export default function Navigation() {
     const [view, setView] = useState('dashboard');
-        const [barangay, setBarangay] = useState('');
+    const [barangay, setBarangay] = useState('');
 
     useEffect(() => {
         const getBarangay = async () => {
@@ -30,30 +29,46 @@ export default function Navigation() {
     return (
         <View style={{ flex: 1, width, position: 'relative' }}>
             <View style={style.headContainer}>
-                <Text style={style.logo}>{barangay.toUpperCase()} iBIS</Text>
+                <Text style={style.logo}>{barangay} iBIS</Text>
             </View>
 
+        {/* ayohon pani */}
             {view == 'dashboard' ? (
                 <Dashboard />
             ) : (
                 <Settings />
             )}
 
-            <Pressable onPress={() => router.push('/form')} style={style.floatBtn}>
+            <Pressable onPress={() => router.push('/addResidentForm')} style={style.floatBtn}>
                 <Ionicons name={'person-add'} color={'#fff'} size={30} />
             </Pressable>
 
             <View style={{ position: 'absolute', bottom: 50, alignSelf: 'center', width: 80, height: 80, borderRadius: 40, backgroundColor: '#f5f5f5', zIndex: 5 }} />
             <View style={{ borderTopLeftRadius: 20, borderTopRightRadius: 20, elevation: 8, position: 'absolute', bottom: 0, flexDirection: 'row', justifyContent: 'space-between',
-                    paddingHorizontal: 20, alignItems: 'center', width, backgroundColor: '#fff', height: 80 }}>
-                <TouchableOpacity onPress={() => setView('dashboard')} style={{ padding: 20, flexDirection: 'column', alignItems: 'center' }}>
-                    <MaterialCommunityIcons name={view == 'dashboard' ? 'view-dashboard' : 'view-dashboard-outline'} size={25} color={ view == 'dashboard' ? '#306060' : '#000' } />
-                    <Text style={{ color: view == 'dashboard' ? '#306060' : '#000', fontSize: 13 }}>Dashboard</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setView('settings')} style={{ padding: 20, flexDirection: 'column', alignItems: 'center' }}>
-                    <Ionicons name={ view == 'settings' ? 'settings' : 'settings-outline'} color={ view == 'settings' ? '#306060' : '#000' } size={25} />
-                    <Text style={{ color: view == 'settings' ? '#306060' : '#000', fontSize: 13 }}>Settings</Text>
-                </TouchableOpacity>
+                    alignItems: 'center', width, backgroundColor: '#fff', height: 80 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', width: '50%' }}>
+                        <TouchableOpacity onPress={() => setView('dashboard')} style={{ paddingVertical: 10, flexDirection: 'column', alignItems: 'center', width: '45%' }}>
+                            <MaterialCommunityIcons name={view == 'dashboard' ? 'view-dashboard' : 'view-dashboard-outline'} size={22} color={ view == 'dashboard' ? '#F07E13' : '#00000085' } />
+                            <Text style={{ color: view == 'dashboard' ? '#F07E13' : '#00000085', fontSize: 12 }}>Dashboard</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => setView('families')} style={{ paddingVertical: 10, flexDirection: 'column', alignItems: 'center', width: '45%' }}>
+                            <Ionicons name={view == 'families' ? 'people' : 'people-outline'} size={22} color={ view == 'families' ? '#F07E13' : '#00000085' } />
+                            <Text style={{ color: view == 'families' ? '#F07E13' : '#00000085', fontSize: 12 }}>Families</Text>
+                        </TouchableOpacity>
+                    </View>
+                
+                    <View style={{ flexDirection: 'row', alignItems: 'center', width: '50%', justifyContent: 'flex-end' }}>
+                        <TouchableOpacity onPress={() => setView('households')} style={{ paddingVertical: 10, flexDirection: 'column', alignItems: 'center', width: '45%' }}>
+                            <Ionicons name={view == 'households' ? 'home' : 'home-outline'} size={22} color={ view == 'households' ? '#F07E13' : '#00000085' } />
+                            <Text style={{ color: view == 'households' ? '#F07E13' : '#00000085', fontSize: 12 }}>Households</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => setView('settings')} style={{ paddingVertical: 10, flexDirection: 'column', alignItems: 'center', width: '45%' }}>
+                            <Ionicons name={ view == 'settings' ? 'settings' : 'settings-outline'} color={ view == 'settings' ? '#F07E13' : '#00000085' } size={22} />
+                            <Text style={{ color: view == 'settings' ? '#F07E13' : '#00000085', fontSize: 12 }}>Settings</Text>
+                        </TouchableOpacity>
+                    </View>
             </View>
         </View>
     );
@@ -61,7 +76,7 @@ export default function Navigation() {
 
 const style = StyleSheet.create({
     headContainer: {
-        backgroundColor: '#306060',
+        backgroundColor: '#F07E13',
         height: 90,
         width,
         paddingTop: 50,
@@ -75,7 +90,7 @@ const style = StyleSheet.create({
         paddingHorizontal: 20
     },
     floatBtn: {
-        backgroundColor: '#306060',
+        backgroundColor: '#F07E13',
         padding: 18,
         borderRadius: 50,
         position: 'absolute',

@@ -22,6 +22,20 @@ export type OptionProps = {
   synced: number;
 }
 
+export type VaccinationRecord = {
+  vaccination_type?: 'child' | 'adult' | null;
+  vaccine_type_id?: number | null;
+  vaccines_received?: string[];
+  date_of_vaccination?: string;
+  next_due_date?: string;
+  remarks?: string;
+}
+
+type HouseholdProps = {
+  id: number;
+  house_number: string;
+}
+
 type FamHeadProps = {
   id: number;
   last_name: string;
@@ -70,6 +84,7 @@ export type ResidentData = {
     voting_eligibility?: boolean;
     registered_voter?: boolean;
     registered_brgy?: string;
+    household_id?: number;
     blood_type_id?: number;
     contact_number?: string;
     email?: string;
@@ -101,9 +116,11 @@ export type ResidentData = {
     has_hdmf?: boolean;
     status_id?: number;
     school?: EducationProps[];
+    vaccinations?: VaccinationRecord[];
     osy?: boolean;
     reason?: string;
-    inactive_type?: number
+    inactive_type?: number;
+    vaccination_type?: 'child' | 'adult' | null;
     date_of_death?: string
     date_of_migration?: string
     place_to_migrate?: string;
@@ -152,8 +169,12 @@ const requiredFields: { key: keyof ResidentData; label: string }[] = [
 
 export default function ResidentForm() {
   const [loading, setLoading] = useState(true);
-  const [residentData, setResidentData] = useState<ResidentData>({id: ''});
+  const [residentData, setResidentData] = useState<ResidentData>({
+    id: '',
+    vaccinations: [{}  as VaccinationRecord]
+  });
   const [showDatePicker, setShowDatePicker] = useState<keyof ResidentData | null>(null);
+  const [households, setHouseholds] = useState<HouseholdProps[]>([]);
   const [options, setOptions] = useState<OptionProps[]>([]);
   const [famHeads, setFamHeads] = useState<FamHeadProps[]>([]);
   const [barangays, setBarangays] = useState<Barangays[]>([]);
@@ -214,7 +235,9 @@ export default function ResidentForm() {
       const optionsData: any = await db.getAllAsync(`SELECT * FROM options`);
       const heads: any = await db.getAllAsync(`SELECT * FROM heads`);
       const brgyData: any = await db.getAllAsync(`SELECT * FROM barangays`);
+      const householdData: any = await db.getAllAsync(`SELECT * FROM households`);
       
+      setHouseholds(householdData);
       setOptions(optionsData);
       setFamHeads(heads);
       setBarangays(brgyData);
@@ -384,7 +407,7 @@ export default function ResidentForm() {
 
   return (
     <View style={{ paddingBottom: 50, flex: 1 }}>
-      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: '#306060', width, height: 90, paddingTop: 35, paddingHorizontal: 10 }}>
+      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: '#F07E13', width, height: 90, paddingTop: 35, paddingHorizontal: 10 }}>
         <Pressable onPress={() => router.back()} >
             <Ionicons name={'arrow-back'} color={'#fff'} size={25} />
         </Pressable>
@@ -392,15 +415,18 @@ export default function ResidentForm() {
       </View>
       {loading == true ? (
         <View style={{ height, alignItems: 'center', paddingTop: 250 }}>
-          <ActivityIndicator size={'large'} color={'#306060'} />
+          <ActivityIndicator size={'large'} color={'#F07E13'} />
         </View>
       ) : (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView style={{ padding: 16 }}>
             <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 15 }}>
-              <View style={{ padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
-                <Text style={{ fontWeight: '900', color: '#306060', fontSize: 16 }}>Basic Information</Text>
-                <Text style={{ fontWeight: '400', fontSize: 11 }}>Basic details about the resident</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                <Ionicons name={'person-outline'} color={'#F07E13'} size={22} />
+                <View>
+                  <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Basic Information</Text>
+                  <Text style={{ fontWeight: '400', fontSize: 11 }}>Basic details about the resident</Text>
+                </View>
               </View>
               <View style={{ padding: 10 }}>
                 {(['last_name', 'first_name', 'middle_name'] as (keyof ResidentData)[]).map(field => (
@@ -546,14 +572,41 @@ export default function ResidentForm() {
                     </Picker>
                   </View>
                 </View>
+
+                <View style={{ marginTop: 10 }}>
+                  <Text style={{ fontSize: 12 }}>Blood Type</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 8, width: '100%', marginBottom: 12 }}>
+                    <Dropdown
+                      style={{
+                        paddingHorizontal: 10,
+                        width: '86%'
+                      }}
+                      data={barangays.map(s => ({ label: s.name, value: s.id }))
+                      }
+                      search
+                      searchPlaceholder="Type to search barangay"
+                      labelField="label"
+                      valueField="value"
+                      placeholder="Select Blood Type"
+                      value={residentData?.registered_brgy ?? defaultBrgyId}
+                      onChange={item => handleOnChange('registered_brgy', item.value)}
+                    />
+                    <TouchableOpacity onPress={() => setBrgyModalView(true)} style={{ padding: 10, borderLeftWidth: 1, borderLeftColor: '#C6C6C6' }}>
+                      <Ionicons name={'add'} size={20} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             </View>
 
-            {/* Contact Information */}
+
             <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 15 }}>
-              <View style={{ padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
-                <Text style={{ fontWeight: '900', color: '#306060', fontSize: 16 }}>Contact Information</Text>
-                <Text style={{ fontWeight: '400', fontSize: 11 }}>Contact details of the resident</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                <Ionicons name={'call-outline'} size={22} color={'#F07E13'} />
+                <View>
+                  <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Contact Information</Text>
+                  <Text style={{ fontWeight: '400', fontSize: 11 }}>Contact details of the resident</Text>
+                </View>
               </View>
 
               <View style={{ padding: 10 }}>
@@ -586,11 +639,14 @@ export default function ResidentForm() {
               </View>
             </View>
             
-            {/* Special Status */}
+            
             <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 15 }}>
-              <View style={{ padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
-                <Text style={{ fontWeight: '900', color: '#306060', fontSize: 16 }}>Special Status</Text>
-                <Text style={{ fontWeight: '400', fontSize: 11 }}>Special status attributes of the resident</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                <Ionicons name={'star-outline'} color={'#F07E13'} size={22} />
+                <View>
+                  <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Special Status</Text>
+                  <Text style={{ fontWeight: '400', fontSize: 11 }}>Special status attributes of the resident</Text>
+                </View>
               </View>
 
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', padding: 10, justifyContent: 'space-between' }}>
@@ -603,88 +659,90 @@ export default function ResidentForm() {
                     <Text style={{ flex: 1, fontSize: 12 }}>{label}</Text>
                   </View>
                 ))}
-
-                <View style={{ width: '48%', marginBottom: 12, }}>
-                  <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center' }}>
-                    <Switch
-                      value={!!residentData?.lgbt}
-                      onValueChange={(val) => handleOnChange('lgbt', val)}
-                    />
-                    <Text style={{ flex: 1, fontSize: 12 }}>LGBTQ+</Text>
-                  </View>
-                  {residentData?.lgbt == true && (
-                    <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 8, height: 40, justifyContent: 'center' }}>
-                      <Picker
-                        mode="dropdown"
-                        selectedValue={residentData?.lgbtq_id}
-                        onValueChange={(val) => handleOnChange('lgbtq_id', val)}
-                      >
-                        <Picker.Item label="Select Option" style={{ fontSize: 13 }} value={null} color="#999" />
-                        {options.filter(d => d.category == 'lgbtq').map(s => (
-                          <Picker.Item key={s.id} label={s.name} value={s.id} style={{ fontSize: 13 }} />
-                        ))}
-                      </Picker>
-                    </View>
-                  )}
+              </View>
+              <View style={{ width: '100%', marginBottom: 12, paddingHorizontal: 10 }}>
+                <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center' }}>
+                  <Switch
+                    value={!!residentData?.lgbt}
+                    onValueChange={(val) => handleOnChange('lgbt', val)}
+                  />
+                  <Text style={{ flex: 1, fontSize: 12 }}>LGBTQ+</Text>
                 </View>
-                
-                <View style={{ width: '48%', marginBottom: 12, }}>
-                  <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center' }}>
-                    <Switch
-                      value={!!residentData?.pwd}
-                      onValueChange={(val) => handleOnChange('pwd', val)}
-                    />
-                    <Text style={{ flex: 1, fontSize: 12 }}>PWD</Text>
-                  </View>
-                  {residentData?.pwd == true && (
-                    <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 8, height: 40, justifyContent: 'center' }}>
-                      <Picker
-                        mode="dropdown"
-                        selectedValue={residentData?.pwd_types_id}
-                        onValueChange={(val) => handleOnChange('pwd_types_id', val)}
-                      >
-                        <Picker.Item label="Select Option" style={{ fontSize: 13 }} value={null} color="#999" />
-                        {options.filter(d => d.category == 'pwd_type').map(s => (
-                          <Picker.Item key={s.id} label={s.name} value={s.id} style={{ fontSize: 13 }} />
-                        ))}
-                      </Picker>
-                    </View>
-                  )}
+                <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 8, height: 40, justifyContent: 'center' }}>
+                  <Picker
+                    mode="dropdown"
+                    selectedValue={residentData?.lgbtq_id}
+                    onValueChange={(val) => handleOnChange('lgbtq_id', val)}
+                  >
+                    <Picker.Item label="Select LGBTQ Option" style={{ fontSize: 13 }} value={null} color="#999" />
+                    {options.filter(d => d.category == 'lgbtq').map(s => (
+                      <Picker.Item key={s.id} label={s.name} value={s.id} style={{ fontSize: 13 }} />
+                    ))}
+                  </Picker>
                 </View>
-                
-                <View style={{ width: '48%', marginBottom: 12, }}>
-                  <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center' }}>
-                    <Switch
-                      value={!!residentData?.ethnicity}
-                      onValueChange={(val) => handleOnChange('ethnicity', val)}
-                    />
-                    <Text style={{ flex: 1, fontSize: 12 }}>Ethnicity</Text>
-                  </View>
-                  {residentData?.ethnicity == true && (
-                    <Dropdown
-                      style={{ borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9 }}
-                      data={options.filter(d => d.category === 'ethnicity')
-                        .map(s => ({ label: s.name, value: s.id }))
-                      }
-                      search
-                      searchPlaceholder="Type to search..."
-                      labelField="label"
-                      valueField="value"
-                      placeholder="Select Option"
-                      value={residentData?.ethnicity_id ?? null}
-                      onChange={item => handleOnChange('ethnicity_id', item.value)}
-                    />
-                  )}
+                {/* {residentData?.lgbt == true && (
+                )} */}
+              </View>
+              
+              <View style={{ width: '100%', marginBottom: 12, paddingHorizontal: 10 }}>
+                <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center' }}>
+                  <Switch
+                    value={!!residentData?.pwd}
+                    onValueChange={(val) => handleOnChange('pwd', val)}
+                  />
+                  <Text style={{ flex: 1, fontSize: 12 }}>PWD</Text>
                 </View>
-
+                <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 8, height: 40, justifyContent: 'center' }}>
+                  <Picker
+                    mode="dropdown"
+                    selectedValue={residentData?.pwd_types_id}
+                    onValueChange={(val) => handleOnChange('pwd_types_id', val)}
+                  >
+                    <Picker.Item label="Select PWD Option" style={{ fontSize: 13 }} value={null} color="#999" />
+                    {options.filter(d => d.category == 'pwd_type').map(s => (
+                      <Picker.Item key={s.id} label={s.name} value={s.id} style={{ fontSize: 13 }} />
+                    ))}
+                  </Picker>
+                </View>
+                {/* {residentData?.pwd == true && (
+                )} */}
+              </View>
+              
+              <View style={{ width: '100%', paddingHorizontal: 10, marginBottom: 12, }}>
+                <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center' }}>
+                  <Switch
+                    value={!!residentData?.ethnicity}
+                    onValueChange={(val) => handleOnChange('ethnicity', val)}
+                  />
+                  <Text style={{ flex: 1, fontSize: 12 }}>Ethnicity</Text>
+                </View>
+                <Dropdown
+                  style={{ borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9 }}
+                  data={options.filter(d => d.category === 'ethnicity')
+                    .map(s => ({ label: s.name, value: s.id }))
+                  }
+                  search
+                  searchPlaceholder="Type to search..."
+                  labelField="label"
+                  valueField="value"
+                  placeholder="Select Ethnicity Option"
+                  placeholderStyle={{ color: '#b3b3b3', fontSize: 13 }}
+                  value={residentData?.ethnicity_id ?? null}
+                  onChange={item => handleOnChange('ethnicity_id', item.value)}
+                />
+                {/* {residentData?.ethnicity == true && (
+                )} */}
               </View>
             </View>
 
-            {/* Government IDs */}
+
             <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 15 }}>
-              <View style={{ padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
-                <Text style={{ fontWeight: '900', color: '#306060', fontSize: 16 }}>Government IDs</Text>
-                <Text style={{ fontWeight: '400', fontSize: 11 }}>Government identification details of the resident</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                <Ionicons name={'id-card-outline'} color={'#F07E13'} size={24} />
+                <View>
+                  <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Government IDs</Text>
+                  <Text style={{ fontWeight: '400', fontSize: 11 }}>Government identification details of the resident</Text>
+                </View>
               </View>
               
               <View style={{ flexDirection: 'column', padding: 10 }}>
@@ -709,11 +767,14 @@ export default function ResidentForm() {
               </View>
             </View>
 
-            {/* Voting & Registration */}
+
             <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 15 }}>
-              <View style={{ padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
-                <Text style={{ fontWeight: '900', color: '#306060', fontSize: 16 }}>Voting & Registration</Text>
-                <Text style={{ fontWeight: '400', fontSize: 11 }}>Voting and registration details of the resident</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                <Ionicons name={'checkmark-circle-outline'} color={'#F07E13'} size={22} /> 
+                <View>
+                  <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Voting & Registration</Text>
+                  <Text style={{ fontWeight: '400', fontSize: 11 }}>Voting and registration details of the resident</Text>
+                </View>
               </View>
 
               <View style={{ flexDirection: 'column', padding: 10, justifyContent: 'space-between' }}>
@@ -762,8 +823,8 @@ export default function ResidentForm() {
                     <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" }}>
                       <View style={{ width: "90%", backgroundColor: '#fff', borderRadius: 12, padding: 20 }}>
                         <View style={{ flexDirection: 'row', alignContent: 'center', gap: 5 }}>
-                          <Ionicons name={'map'} size={20} color={'#306060'} />
-                          <Text style={{ marginBottom: 15, fontSize: 18, fontWeight: 'bold', color: '#306060' }}>Add Barangay</Text>
+                          <Ionicons name={'map'} size={20} color={'#F07E13'} />
+                          <Text style={{ marginBottom: 15, fontSize: 18, fontWeight: 'bold', color: '#F07E13' }}>Add Barangay</Text>
                         </View>
                         <View style={{ marginBottom: 10 }}>
                           <Text style={{ fontSize: 12 }}>Name</Text>
@@ -789,7 +850,7 @@ export default function ResidentForm() {
                             <TouchableOpacity onPress={() => setBrgyModalView(false)} style={{ padding: 10 }}>
                               <Text style={{ color: '#919191' }}>Cancel</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleSaveBarangay()} style={{ paddingVertical: 10, paddingHorizontal: 15, borderRadius: 8, backgroundColor: '#306060' }}>
+                            <TouchableOpacity onPress={() => handleSaveBarangay()} style={{ paddingVertical: 10, paddingHorizontal: 15, borderRadius: 8, backgroundColor: '#F07E13' }}>
                                 <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>
                             </TouchableOpacity>
                         </View>
@@ -799,11 +860,14 @@ export default function ResidentForm() {
                 )}
             </View>
 
-            {/* Status & Migration */}
+
             <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 20 }}>
-              <View style={{ padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
-                <Text style={{ fontWeight: '900', color: '#306060', fontSize: 16 }}>Status & Migration</Text>
-                <Text style={{ fontWeight: '400', fontSize: 11 }}>Status and migration details of the resident</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                  <Ionicons name={'flag-outline'} color={'#F07E13'} size={22} />
+                <View>
+                  <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Status & Migration</Text>
+                  <Text style={{ fontWeight: '400', fontSize: 11 }}>Status and migration details of the resident</Text>
+                </View>
               </View>
 
               <View style={{ padding: 10, flexDirection: 'column' }}>
@@ -905,10 +969,11 @@ export default function ResidentForm() {
               </View>
             </View>
 
-            {/* Education Section */}
+
             <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 20 }}>
-              <View style={{ padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
-                <Text style={{ fontWeight: '900', color: '#306060', fontSize: 16 }}>Education</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                <Ionicons name={'school-outline'} color={'#F07E13'} size={22} />
+                <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Education</Text>
               </View>
                 
               {residentData?.school?.map((s: any, index) => (
@@ -919,29 +984,56 @@ export default function ResidentForm() {
                       <Text style={{ color: '#F54927' }}>Remove</Text>
                     </TouchableOpacity>
                   )}
-                  <View style={{ padding: 10 }}>  
+                  <View style={{ padding: 10 }}>
                     <Text style={{ fontSize: 12 }}>Educational Attainment/School</Text>
-                  <View style={{ borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 10, marginBottom: 10, height: 50, justifyContent: 'center' }}>
-                    <Picker
-                      mode='dropdown'
-                      selectedValue={s.educational_attainment_school_id  ?? null}
-                      onValueChange={(val) => handleSchoolChange(index, 'educational_attainment_school_id', Number(val))}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 10, marginBottom: 10, height: 50 }}>
+                      <Picker
+                        mode='dropdown'
+                        selectedValue={s.educational_attainment_school_id ?? null}
+                        onValueChange={(val) => handleSchoolChange(index, 'educational_attainment_school_id', Number(val))}
+                        style={{ flex: 1 }}
+                      >
+                        <Picker.Item label="Select attainment" value="" style={{ color: '#888888', fontSize: 14 }} />
+                        {options.filter(d => d.category.toLowerCase() == 'educational attainment/school').map((att) => (
+                          <Picker.Item key={att.id} label={att.name} value={att.id} style={{ fontSize: 14 }} />
+                        ))}
+                      </Picker>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setNewOption({ name: '', category: 'educational attainment/school' });
+                          setOptionModal(true);
+                        }}
+                        style={{ padding: 10, borderLeftWidth: 1, borderLeftColor: '#C6C6C6', height: '100%', justifyContent: 'center' }}
+                      >
+                        <Ionicons name={'add'} size={20} />
+                      </TouchableOpacity>
+                    </View>
+
+                  <Text style={{ fontSize: 12 }}>School Attended</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 8, width: '100%', marginBottom: 12 }}>
+                    <Dropdown
+                      style={{ paddingHorizontal: 10, width: '86%' }}
+                      data={options.filter(opt => opt.category === 'school').map(s => ({ label: s.name, value: s.name }))}
+                      search
+                      searchPlaceholder="Type to search school..."
+                      labelField="label"
+                      valueField="value"
+                      placeholder="Select School"
+                      placeholderStyle={{ color: '#b3b3b3', fontSize: 13 }}
+                      value={s?.school ?? null}
+                      onChange={item => handleSchoolChange(index, 'school', item.value)}
+                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        setNewOption({ name: '', category: 'school' });
+                        setOptionModal(true);
+                      }}
+                      style={{ padding: 10, borderLeftWidth: 1, borderLeftColor: '#C6C6C6', height: 45, justifyContent: 'center' }}
                     >
-                      <Picker.Item label="Select attainment" value="" style={{ color: '#888888', fontSize: 14 }} />
-                      {options.filter(d => d.category.toLowerCase() == 'educational attainment/school').map((att) => (
-                        <Picker.Item key={att.id} label={att.name} value={att.id} style={{ fontSize: 14 }} />
-                      ))}
-                    </Picker>
+                      <Ionicons name={'add'} size={20} />
+                    </TouchableOpacity>
                   </View>
 
-                  {/* School Name */}
-                  <Text style={{ fontSize: 12 }}>School Attended</Text>
-                  <TextInput
-                    value={s?.school}
-                    onChangeText={(text) => handleSchoolChange(index, 'school', text)}
-                    placeholder="Enter school name"
-                    style={{ borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 4, marginBottom: 10 }}
-                  />
                     {options.filter(opt => opt.category.toLowerCase() == 'educational attainment/school')
                     .find(opt => opt.name == 'Senior High School')?.id == (residentData.school && residentData.school[index].educational_attainment_school_id) && (
                       <>
@@ -1001,8 +1093,8 @@ export default function ResidentForm() {
                         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" }}>
                           <View style={{ width: "90%", backgroundColor: '#fff', borderRadius: 12, padding: 20 }}>
                             <View style={{ flexDirection: 'row', alignContent: 'center', gap: 5, marginBottom: 15 }}>
-                              <Ionicons name={'bookmark'} size={20} color={'#306060'} />
-                              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#306060' }}>
+                              <Ionicons name={'bookmark'} size={20} color={'#F07E13'} />
+                              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#F07E13' }}>
                                 {options.filter(opt => opt.category.toLowerCase() == 'educational attainment/school')
                                 .find(opt => opt.name == 'College')?.id == (residentData.school && residentData.school[index].educational_attainment_school_id)
                                   ? 'Add Degree' : 'Add Strand'
@@ -1025,7 +1117,7 @@ export default function ResidentForm() {
                                 <TouchableOpacity onPress={() => setOptionModal(false)} style={{ padding: 10 }}>
                                   <Text style={{ color: '#919191' }}>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={() => handleSaveOption()} style={{ paddingVertical: 10, paddingHorizontal: 15, borderRadius: 8, backgroundColor: '#306060' }}>
+                                <TouchableOpacity onPress={() => handleSaveOption()} style={{ paddingVertical: 10, paddingHorizontal: 15, borderRadius: 8, backgroundColor: '#F07E13' }}>
                                     <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>
                                 </TouchableOpacity>
                             </View>
@@ -1078,47 +1170,283 @@ export default function ResidentForm() {
               )}
             </View>
 
-            <Pressable onPress={() => handleAddEducation()} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, padding: 10, backgroundColor: '#306060', alignSelf: 'center', marginBottom: 15, borderRadius: 8 }}>
+            <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                <Ionicons name={'heart-outline'} color={'#F07E13'} size={22} />
+                <View>
+                  <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Vaccination Records</Text>
+                  <Text style={{ fontWeight: '400', fontSize: 11 }}>Vaccination records of the resident</Text>
+                </View>
+              </View>
+
+              {residentData?.vaccinations?.map((record, index) => (
+                <View key={index} style={{ padding: 10, borderBottomWidth: index !== (residentData.vaccinations!.length - 1) ? 1 : 0, borderBottomColor: '#C6C6C6' }}>
+                  {index !== 0 && (
+                    <TouchableOpacity
+                      onPress={() => setResidentData(prev => ({
+                        ...prev,
+                        vaccinations: prev.vaccinations?.filter((_, i) => i !== index)
+                      }))}
+                      style={{ alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 }}
+                    >
+                      <Ionicons name={'close'} color={'#F54927'} size={20} />
+                      <Text style={{ color: '#F54927' }}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Vaccination Type */}
+                  <Text style={{ fontSize: 12 }}>Vaccination Type</Text>
+                  <View style={{ borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 10, height: 50, justifyContent: 'center', marginBottom: 12 }}>
+                    <Picker
+                      mode="dropdown"
+                      selectedValue={record.vaccination_type ?? null}
+                      onValueChange={(val) => setResidentData(prev => {
+                        const updated = [...(prev.vaccinations ?? [])];
+                        updated[index] = { ...updated[index], vaccination_type: val, vaccine_type_id: null, vaccines_received: [] };
+                        return { ...prev, vaccinations: updated };
+                      })}
+                    >
+                      <Picker.Item label="Select an Option" value={null} color="#999" style={{ fontSize: 14 }} />
+                      <Picker.Item label="Child Vaccination" value="child" style={{ fontSize: 14 }} />
+                      <Picker.Item label="Adult Vaccination" value="adult" style={{ fontSize: 14 }} />
+                    </Picker>
+                  </View>
+
+                  {/* Adult: Vaccine Type dropdown */}
+                  {record.vaccination_type === 'adult' && (
+                    <>
+                      <Text style={{ fontSize: 12 }}>Vaccine Type</Text>
+                      <View style={{ borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 10, height: 50, justifyContent: 'center', marginBottom: 12 }}>
+                        <Picker
+                          mode="dropdown"
+                          selectedValue={record.vaccine_type_id ?? null}
+                          onValueChange={(val) => setResidentData(prev => {
+                            const updated = [...(prev.vaccinations ?? [])];
+                            updated[index] = { ...updated[index], vaccine_type_id: val };
+                            return { ...prev, vaccinations: updated };
+                          })}
+                        >
+                          <Picker.Item label="Select Vaccine Type" value={null} color="#999" style={{ fontSize: 14 }} />
+                          {options.filter(opt => opt.category === 'Vaccine Type').map(opt => (
+                            <Picker.Item key={opt.id} label={opt.name} value={opt.id} style={{ fontSize: 14 }} />
+                          ))}
+                        </Picker>
+                      </View>
+                    </>
+                  )}
+
+                  {/* Child: Vaccines Received checkboxes */}
+                  {record.vaccination_type === 'child' && (
+                    <>
+                      <Text style={{ fontSize: 12, marginBottom: 8 }}>Vaccines Received</Text>
+                      {options.filter(opt => opt.category === 'Child Vaccine').map(opt => {
+                        const isChecked = record.vaccines_received?.includes(opt.id) ?? false;
+                        return (
+                          <TouchableOpacity
+                            key={opt.id}
+                            onPress={() => setResidentData(prev => {
+                              const updated = [...(prev.vaccinations ?? [])];
+                              const current = updated[index].vaccines_received ?? [];
+                              updated[index] = {
+                                ...updated[index],
+                                vaccines_received: isChecked
+                                  ? current.filter(id => id !== opt.id)
+                                  : [...current, opt.id]
+                              };
+                              return { ...prev, vaccinations: updated };
+                            })}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}
+                          >
+                            <View style={{
+                              width: 20, height: 20, borderRadius: 4,
+                              borderWidth: 1, borderColor: isChecked ? '#F07E13' : '#C6C6C6',
+                              backgroundColor: isChecked ? '#F07E13' : '#fff',
+                              alignItems: 'center', justifyContent: 'center'
+                            }}>
+                              {isChecked && <Ionicons name={'checkmark'} size={14} color={'#fff'} />}
+                            </View>
+                            <Text style={{ fontSize: 13 }}>{opt.name}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {/* Shared fields */}
+                  {record.vaccination_type && (
+                    <>
+                      {/* Date of Vaccination */}
+                      <Text style={{ fontSize: 12 }}>Date of Vaccination</Text>
+                      <TouchableOpacity
+                        onPress={() => setShowDatePicker(`vaccination_date_${index}` as any)}
+                        style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 12, borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 8, marginBottom: 12 }}
+                      >
+                        <Text style={{ color: record.date_of_vaccination ? '#000' : '#b3b3b3' }}>
+                          {record.date_of_vaccination ?? 'Select date'}
+                        </Text>
+                        <Ionicons name="calendar" size={20} color="#989898" />
+                      </TouchableOpacity>
+                      {showDatePicker === `vaccination_date_${index}` && (
+                        <DateTimePicker
+                          value={record.date_of_vaccination ? new Date(record.date_of_vaccination) : new Date()}
+                          mode="date"
+                          display="default"
+                          onChange={(_, date) => {
+                            if (date) setResidentData(prev => {
+                              const updated = [...(prev.vaccinations ?? [])];
+                              updated[index] = { ...updated[index], date_of_vaccination: date.toISOString().split('T')[0] };
+                              return { ...prev, vaccinations: updated };
+                            });
+                            setShowDatePicker(null);
+                          }}
+                        />
+                      )}
+
+                      {/* Next Due Date */}
+                      <Text style={{ fontSize: 12 }}>Next Due Date</Text>
+                      <TouchableOpacity
+                        onPress={() => setShowDatePicker(`vaccination_next_${index}` as any)}
+                        style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 12, borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 8, marginBottom: 12 }}
+                      >
+                        <Text style={{ color: record.next_due_date ? '#000' : '#b3b3b3' }}>
+                          {record.next_due_date ?? 'Select date'}
+                        </Text>
+                        <Ionicons name="calendar" size={20} color="#989898" />
+                      </TouchableOpacity>
+                      {showDatePicker === `vaccination_next_${index}` && (
+                        <DateTimePicker
+                          value={record.next_due_date ? new Date(record.next_due_date) : new Date()}
+                          mode="date"
+                          display="default"
+                          onChange={(_, date) => {
+                            if (date) setResidentData(prev => {
+                              const updated = [...(prev.vaccinations ?? [])];
+                              updated[index] = { ...updated[index], next_due_date: date.toISOString().split('T')[0] };
+                              return { ...prev, vaccinations: updated };
+                            });
+                            setShowDatePicker(null);
+                          }}
+                        />
+                      )}
+
+                      {/* Remarks */}
+                      <Text style={{ fontSize: 12 }}>Remarks / Note</Text>
+                      <TextInput
+                        value={record.remarks}
+                        onChangeText={(text) => setResidentData(prev => {
+                          const updated = [...(prev.vaccinations ?? [])];
+                          updated[index] = { ...updated[index], remarks: text };
+                          return { ...prev, vaccinations: updated };
+                        })}
+                        placeholder="Enter remarks or notes"
+                        multiline
+                        numberOfLines={3}
+                        style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 4, marginBottom: 10, textAlignVertical: 'top' }}
+                      />
+                    </>
+                  )}
+                </View>
+              ))}
+
+              <Pressable
+                onPress={() => setResidentData(prev => ({
+                  ...prev,
+                  vaccinations: [...(prev.vaccinations ?? []), {} as VaccinationRecord]
+                }))}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, padding: 10, backgroundColor: '#F07E13', alignSelf: 'center', marginBottom: 10, borderRadius: 8 }}
+              >
+                <Ionicons name={'add-circle-outline'} color={'#fff'} size={24} />
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Add Vaccination Record</Text>
+              </Pressable>
+            </View>
+            
+
+
+            <Pressable onPress={() => handleAddEducation()} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, padding: 10, backgroundColor: '#F07E13', alignSelf: 'center', marginBottom: 15, borderRadius: 8 }}>
               <Ionicons name={'add-circle-outline'} color={'#fff'} size={24} />
               <Text style={{ color: '#fff', fontWeight: 700 }}>Add Education</Text>
             </Pressable>
 
             {/* Head of the Family */}
             <View style={{ borderColor: '#C6C6C6', borderWidth: 1, borderRadius: 10, marginBottom: 20 }}>
-              <View style={{ padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
-                <Text style={{ fontWeight: '900', color: '#306060', fontSize: 16 }}>Select Head of Family</Text>
-                <Text style={{ fontWeight: '400', fontSize: 11 }}>Select the head of family for this resident</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderBottomColor: '#C6C6C6', borderBottomWidth: 1 }}>
+                <Ionicons name={'people-outline'} color={'#F07E13'} size={22} />
+                <View>
+                  <Text style={{ fontWeight: '900', color: '#F07E13', fontSize: 16 }}>Household & Family</Text>
+                  <Text style={{ fontWeight: '400', fontSize: 11 }}>Assign this resident to a household and family</Text>
+                </View>
               </View>
               <View style={{ padding: 10 }}>
-                <Text style={{ fontSize: 12 }}>Select Head</Text>
-                <View style={{ borderWidth: 1, borderColor: '#C6C6C6', borderRadius: 10, justifyContent: 'center' }}>
-                  <Picker
-                    mode="dropdown"
-                    selectedValue={residentData?.family_id}
-                    onValueChange={(val) => handleOnChange('family_id', val)}
-                  >
-                    <Picker.Item label="Select Head of Family" value="" style={{ fontSize: 14 }} />
-                    {famHeads.map((member) => (
-                      <Picker.Item
-                        key={member.id}
-                        label={`${member.first_name} ${member.last_name}`}
-                        value={member.id}
-                        style={{ fontSize: 14 }}
-                      />
-                    ))}
-                  </Picker>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+                {/* Household */}
+                <Text style={{ fontSize: 12 }}>Household</Text>
+                <Dropdown
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#C6C6C6',
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 13,
+                    marginBottom: 12,
+                  }}
+                  data={households.map(h => ({
+                    label: `House No. ${h.house_number || h.id}`,
+                    value: h.id
+                  }))}
+                  search
+                  searchPlaceholder="Type to search household..."
+                  labelField="label"
+                  valueField="value"
+                  placeholder="Select Household"
+                  placeholderStyle={{ color: '#b3b3b3', fontSize: 13 }}
+                  value={residentData?.household_id ?? null}
+                  onChange={item => handleOnChange('household_id', item.value)}
+                />
+
+                {/* Make Head toggle */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <Switch
                     value={residentData?.make_head_of_family}
                     onValueChange={(val) => handleOnChange('make_head_of_family', val)}
                   />
-                  <Text style={{ flex: 1, fontSize: 12 }}>Set resident as Head</Text>
+                  <Text style={{ flex: 1, fontSize: 12 }}>Set resident as Head of Family</Text>
                 </View>
+                <Text style={{ fontSize: 11, color: '#8f8f8f', marginLeft: 47, marginTop: -15, marginBottom: 15 }}>
+                  Enable to automatically create a new family with this resident as the head
+                </Text>
+
+                {/* Head of Family — hidden when make_head_of_family is true */}
+                {!residentData?.make_head_of_family && (
+                  <>
+                    <Text style={{ fontSize: 12 }}>Head of Family</Text>
+                    <Dropdown
+                      style={{
+                        borderWidth: 1,
+                        borderColor: '#C6C6C6',
+                        borderRadius: 8,
+                        paddingHorizontal: 10,
+                        paddingVertical: 13,
+                        marginBottom: 12,
+                      }}
+                      data={famHeads.map(member => ({
+                        label: `${member.first_name} ${member.middle_name ? member.middle_name + ' ' : ''}${member.last_name}`,
+                        value: member.id
+                      }))}
+                      search
+                      searchPlaceholder="Type to search family head..."
+                      labelField="label"
+                      valueField="value"
+                      placeholder="Select Head of Family"
+                      placeholderStyle={{ color: '#b3b3b3', fontSize: 13 }}
+                      value={residentData?.family_id ?? null}
+                      onChange={item => handleOnChange('family_id', item.value)}
+                    />
+                  </>
+                )}
               </View>
             </View>
 
-            <TouchableOpacity onPress={() => handleSubmit()} style={{ paddingVertical: 15, backgroundColor: '#306060', marginBottom: 20, borderRadius: 8 }}>
+            <TouchableOpacity onPress={() => handleSubmit()} style={{ paddingVertical: 15, backgroundColor: '#F07E13', marginBottom: 20, borderRadius: 8 }}>
               <Text style={{ textAlign: 'center', color: '#fff', fontWeight: '700', fontSize: 16 }}>Add Resident</Text>
             </TouchableOpacity>
           </ScrollView>
